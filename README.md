@@ -1,0 +1,184 @@
+# SniptNote
+
+![版本](https://img.shields.io/badge/版本-0.2.0-blue)
+
+一个面向程序员的命令片段管理工具，支持快速添加、搜索、标签筛选、排序与导出导入。项目基于 `Tauri + Vue 3 + Vite + Pinia` 构建，桌面端体积小、性能好，亦可在浏览器中开发预览。
+
+## 功能特性
+
+- 命令管理：添加、编辑、删除、收藏，支持标签与搜索。
+- 排序与过滤：按更新时间/创建时间/标题排序；支持收藏优先；标签点击筛选；清除过滤。
+- 展示控制：
+  - 显示/隐藏简介（默认隐藏，适合高密度浏览）。
+  - 列表单行模式（仅显示“标题 + 操作按钮”，最大化可视数量）。
+- Markdown 简介与代码高亮：使用 `markdown-it` 与 `highlight.js`（bash）。
+- 数据持久化：命令数据存储在 `localStorage`，刷新后仍在。
+- 导入导出：
+  - 桌面环境：通过 Tauri 插件（`@tauri-apps/plugin-dialog`, `@tauri-apps/plugin-fs`）原生保存/打开。
+  - 浏览器环境：自动回退为下载/文件选择。
+- 窗口尺寸：默认 `1100x800`，最小 `900x600`（可修改配置），桌面端支持窗口尺寸持久化。
+ - 多主题与统一配色：提供 `light/dark/ocean/emerald/rose/amber` 多套主题，
+   通过页面顶部下拉选择器或循环切换按钮应用；主题持久化存储；
+   覆盖 Element Plus 的按钮与文字变量，实现随主题统一变化的更高级观感。
+ - 导入增强：支持顶层数组与 `{ commands: [] }` 两种结构，识别字段别名
+  （`title|name`、`command|cmd|shell`、`description|desc`），按 `command` 去重并反馈新增/重复/无效条数。
+ - 文案优化：单行模式开关未激活文案为“普通模式”，更贴近使用习惯。
+
+## 快速开始
+
+### 环境要求
+
+- Node.js `>= 18`
+- 推荐包管理器：`npm` 或 `pnpm`
+- 桌面开发与构建：需要安装 Rust 工具链与 Tauri CLI（参考 Tauri 官方文档）
+
+### 安装依赖
+
+```bash
+npm install
+# 或
+pnpm install
+```
+
+### 开发运行
+
+- 浏览器预览（Vite 开发服务器）：
+
+```bash
+npm run dev
+# 默认端口为 5173（或根据你的环境为其他端口）
+```
+
+- 桌面应用（Tauri 开发模式）：
+
+```bash
+npm run tauri dev
+```
+
+### 生产构建
+
+- Web 构建：
+
+```bash
+npm run build
+```
+
+- 桌面应用打包：
+
+```bash
+npm run tauri build
+```
+
+## 配置说明
+
+- 默认窗口尺寸与最小尺寸在 `src-tauri/tauri.conf.json` 的 `windows` 配置中：
+
+```json
+{
+  "tauri": {
+    "windows": [
+      {
+        "width": 1100,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600
+      }
+    ]
+  }
+}
+```
+
+- 窗口尺寸持久化逻辑在 `src/main.ts` 中（仅桌面环境生效）。
+
+## 使用指南
+
+- 添加命令：点击“添加命令”打开表单，填写标题、命令、描述（可选）、标签。
+- 搜索与筛选：
+  - 顶部搜索框支持标题/命令/简介全文搜索。
+  - 标签区域点击即可筛选；“清除过滤”按钮恢复所有命令。
+- 排序与收藏优先：
+  - 选择排序键（更新时间/创建时间/标题）与排序方向（升/降）。
+  - 打开“收藏优先”以优先显示收藏项。
+- 展示控制：
+  - “显示/隐藏简介”在高密度浏览时可关闭简介。
+  - “单行模式”仅显示标题与操作按钮，适合列表密集浏览。
+- 导入导出：
+  - 导出会生成一个包含所有命令的 JSON 文件；桌面端使用原生对话框保存，浏览器环境自动触发下载。
+  - 导入支持从 JSON 文件合并到现有列表：解析顶层数组或 `{ commands: [] }`；
+    支持字段别名（`title|name`、`command|cmd|shell`、`description|desc`）；
+    避免重复：按 `command` 字段去重；导入完成后会提示新增/重复/无效的条目数量。
+
+### 导出 JSON 示例
+
+导出的数据为命令对象数组（日期为 ISO 字符串）：
+
+```json
+[
+  {
+    "id": "uuid-xxxx",
+    "title": "示例命令",
+    "command": "echo hello",
+    "description": "这是一个示例",
+    "tags": ["demo", "bash"],
+    "favorite": false,
+    "createdAt": "2025-01-01T12:00:00.000Z",
+    "updatedAt": "2025-01-01T12:00:00.000Z"
+  }
+]
+```
+
+## 主题与配色
+
+- 主题选择：页面顶部提供下拉选择器与循环切换按钮，可在 `light/dark/ocean/emerald/rose/amber` 六套主题中选择；选择会持久化到 `localStorage`。
+- 统一配色：通过覆盖 Element Plus 的主题变量，按钮与文字、提示色、标签色随主题统一变化：
+  - 主要色系：`--el-color-primary/success/warning/danger/info` 及对应 `-light-*`、`-dark-*`
+  - 文本层级：`--el-text-color-primary/regular/secondary/disabled`
+  - 圆角边框：`--el-border-radius-*` 与 `--el-border-color-*`
+  - 交互反馈：统一了按钮的 `hover/active/focus` 亮度与阴影对比
+
+> 如果你希望进一步微调某一主题的主色或梯度（更克制/更浓郁），可以告知偏好的色值，我可同步调整相关变量以匹配你的审美。
+
+## 技术栈
+
+- 前端：`Vue 3` + `Vite` + `TypeScript` + `Pinia` + `Element Plus`
+- 桌面：`Tauri`
+- Markdown：`markdown-it`
+- 代码高亮：`highlight.js`（内置 bash 语言高亮）
+
+## 目录结构（节选）
+
+```
+src/
+  components/
+    CommandForm.vue      # 新增/编辑命令的表单
+    CommandList.vue      # 命令列表、筛选/排序与卡片显示
+  stores/
+    commandStore.ts      # 命令数据、搜索/过滤/排序、本地存储持久化
+    uiStore.ts           # 主题、显示/隐藏简介、单行模式等 UI 状态
+  views/
+    HomeView.vue         # 页面布局与操作栏
+src-tauri/
+  tauri.conf.json        # 窗口尺寸等 Tauri 配置
+```
+
+## 推荐 IDE 配置
+
+- [VS Code](https://code.visualstudio.com/)
+- 插件：
+  - [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
+  - [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode)
+  - [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+
+---
+
+如果你有界面布局或交互密度方面的进一步偏好（例如更小字号、限制代码块行数、快捷键切换单行模式），欢迎提出，我可以继续迭代。
+
+## 最近更新
+
+- **v0.2.0**：
+  - 增强导入逻辑：支持顶层数组与 `{ commands: [] }`；字段别名识别；按 `command` 去重；导入结果给出新增/重复/无效条目统计。
+  - 多主题与统一配色：新增 `light/dark/ocean/emerald/rose/amber` 主题；按钮与文字颜色随主题变化，整体观感更协调、层次更清晰。
+  - 单行模式文案优化：开关未激活文本调整为"普通模式"，更直观地提示当前展示样式。
+  - 新增文档：`docs/themes.md` 和 `docs/import.md`
+
+> 完整更新日志请查看 [CHANGELOG.md](./CHANGELOG.md)
