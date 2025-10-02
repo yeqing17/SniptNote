@@ -17,12 +17,12 @@
   - 桌面环境：通过 Tauri 插件（`@tauri-apps/plugin-dialog`, `@tauri-apps/plugin-fs`）原生保存/打开。
   - 浏览器环境：自动回退为下载/文件选择。
 - 窗口尺寸：默认 `1100x800`，最小 `900x600`（可修改配置），桌面端支持窗口尺寸持久化。
- - 多主题与统一配色：提供 `light/dark/ocean/emerald/rose/amber` 多套主题，
+- 多主题与统一配色：提供 `light/dark/ocean/emerald/rose/amber` 多套主题，
    通过页面顶部下拉选择器或循环切换按钮应用；主题持久化存储；
    覆盖 Element Plus 的按钮与文字变量，实现随主题统一变化的更高级观感。
- - 导入增强：支持顶层数组与 `{ commands: [] }` 两种结构，识别字段别名
+- 导入增强：支持顶层数组与 `{ commands: [] }` 两种结构，识别字段别名
   （`title|name`、`command|cmd|shell`、`description|desc`），按 `command` 去重并反馈新增/重复/无效条数。
- - 文案优化：单行模式开关未激活文案为“普通模式”，更贴近使用习惯。
+- 文案优化：单行模式开关未激活文案为“普通模式”，更贴近使用习惯。
 
 ## 快速开始
 
@@ -125,7 +125,7 @@ npm run tauri build
     "updatedAt": "2025-01-01T12:00:00.000Z"
   }
 ]
-```
+```image.png
 
 ## 主题与配色
 
@@ -148,6 +148,7 @@ npm run tauri build
 ## 目录结构（节选）
 
 ```
+
 src/
   components/
     CommandForm.vue      # 新增/编辑命令的表单
@@ -159,6 +160,7 @@ src/
     HomeView.vue         # 页面布局与操作栏
 src-tauri/
   tauri.conf.json        # 窗口尺寸等 Tauri 配置
+
 ```
 
 ## 推荐 IDE 配置
@@ -177,7 +179,7 @@ src-tauri/
 
 - **v0.2.0**：
   - 增强导入逻辑：支持顶层数组与 `{ commands: [] }`；字段别名识别；按 `command` 去重；导入结果给出新增/重复/无效条目统计。
-  - 多主题与统一配色：新增 `light/dark/ocean/emerald/rose/amber` 主题；按钮与文字颜色随主题变化，整体观感更协调、层次更清晰。
+  - 多主题与统一配色：新增 `light/dark/ocean/emerald/rose/amber` 主题；按钮与文字颜色随主题变image.png化，整体观感更协调、层次更清晰。
   - 单行模式文案优化：开关未激活文本调整为"普通模式"，更直观地提示当前展示样式。
   - 新增文档：`docs/themes.md` 和 `docs/import.md`
 
