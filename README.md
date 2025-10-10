@@ -125,7 +125,9 @@ npm run tauri build
     "updatedAt": "2025-01-01T12:00:00.000Z"
   }
 ]
-```image.png
+```
+
+image.png
 
 ## 主题与配色
 
