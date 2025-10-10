@@ -127,7 +127,7 @@ npm run tauri build
 ]
 ```
 
-image.png
+详见 [/docs/import.md](./docs/import.md)
 
 ## 主题与配色
 
@@ -138,7 +138,7 @@ image.png
   - 圆角边框：`--el-border-radius-*` 与 `--el-border-color-*`
   - 交互反馈：统一了按钮的 `hover/active/focus` 亮度与阴影对比
 
-> 如果你希望进一步微调某一主题的主色或梯度（更克制/更浓郁），可以告知偏好的色值，我可同步调整相关变量以匹配你的审美。
+自定义主题配色，参考 [/docs/themes.md](./docs/themes.md)
 
 ## 技术栈
 
@@ -174,8 +174,6 @@ src-tauri/
   - [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
 
 ---
-
-如果你有界面布局或交互密度方面的进一步偏好（例如更小字号、限制代码块行数、快捷键切换单行模式），欢迎提出，我可以继续迭代。
 
 ## 最近更新
 
