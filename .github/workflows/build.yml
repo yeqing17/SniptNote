@@ -1,0 +1,201 @@
+name: Build Desktop App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows-latest'
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          
+      - name: Install Windows build tools
+        if: matrix.platform == 'windows-latest'
+        run: |
+          Write-Host "Checking for Visual Studio Build Tools..."
+          # Windows runner already has VS Build Tools, but we can verify
+          rustup target add x86_64-pc-windows-msvc
+
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build the app
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        run: |
+          Write-Host "=== Building Tauri application ==="
+          Write-Host "Node version: $(node --version)"
+          Write-Host "NPM version: $(npm --version)"
+          Write-Host "Rust version: $(rustc --version)"
+          Write-Host "Building in release mode..."
+          npx @tauri-apps/cli build
+          Write-Host "=== Build completed ==="
+          
+      - name: Verify build outputs
+        run: |
+          Write-Host "=== Verifying build outputs ==="
+          $exePath = "src-tauri\target\release\sniptnote.exe"
+          if (Test-Path $exePath) {
+            $fileInfo = Get-Item $exePath
+            Write-Host "✓ Found sniptnote.exe"
+            Write-Host "  Size: $([math]::Round($fileInfo.Length/1MB, 2)) MB"
+            Write-Host "  Last Modified: $($fileInfo.LastWriteTime)"
+            
+            # 检查文件是否可执行（至少检查文件头）
+            $bytes = [System.IO.File]::ReadAllBytes($exePath)
+            if ($bytes.Length -gt 0) {
+              Write-Host "  File is not empty"
+              # 检查 PE 文件头 (MZ)
+              if ($bytes[0] -eq 0x4D -and $bytes[1] -eq 0x5A) {
+                Write-Host "  ✓ Valid PE executable header"
+              } else {
+                Write-Host "  ⚠ WARNING: Invalid PE header!"
+              }
+            } else {
+              Write-Host "  ⚠ WARNING: File is empty!"
+              exit 1
+            }
+          } else {
+            Write-Host "✗ sniptnote.exe not found!"
+            exit 1
+          }
+
+      - name: List build outputs
+        run: |
+          echo "=== Checking release directory ==="
+          if (Test-Path "src-tauri\target\release") {
+            Write-Host "Release directory exists"
+            Get-ChildItem -Recurse "src-tauri\target\release" -File | Select-Object FullName, @{Name="Size(KB)";Expression={[math]::Round($_.Length/1KB,2)}} | Format-Table -AutoSize
+          } else {
+            Write-Host "Release directory not found"
+          }
+          echo "=== Checking bundle directory ==="
+          if (Test-Path "src-tauri\target\release\bundle") {
+            Write-Host "Bundle directory exists"
+            Get-ChildItem -Recurse "src-tauri\target\release\bundle" | Select-Object FullName, Length | Format-Table -AutoSize
+          } else {
+            Write-Host "Bundle directory not found"
+          }
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-build
+          path: |
+            src-tauri/target/release/bundle/**
+            src-tauri/target/release/*.exe
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Prepare release files
+        if: startsWith(github.ref, 'refs/tags/')
+        id: prepare_release
+        run: |
+          Write-Host "=== Searching for build artifacts ==="
+          
+          # Check for MSI installer
+          if (Test-Path "src-tauri\target\release\bundle\msi") {
+            $msiFiles = Get-ChildItem "src-tauri\target\release\bundle\msi\*.msi" -ErrorAction SilentlyContinue
+            foreach ($file in $msiFiles) {
+              Write-Host "Found MSI: $($file.Name) ($([math]::Round($file.Length/1MB, 2)) MB)"
+            }
+          } else {
+            Write-Host "MSI directory not found"
+          }
+          
+          # Check for NSIS installer
+          if (Test-Path "src-tauri\target\release\bundle\nsis") {
+            $nsisFiles = Get-ChildItem "src-tauri\target\release\bundle\nsis\*.exe" -ErrorAction SilentlyContinue
+            foreach ($file in $nsisFiles) {
+              Write-Host "Found NSIS: $($file.Name) ($([math]::Round($file.Length/1MB, 2)) MB)"
+            }
+          } else {
+            Write-Host "NSIS directory not found"
+          }
+          
+          # Check for standalone EXE
+          if (Test-Path "src-tauri\target\release") {
+            $exeFiles = Get-ChildItem "src-tauri\target\release\*.exe" -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "sniptnote*" }
+            foreach ($file in $exeFiles) {
+              Write-Host "Found EXE: $($file.Name) ($([math]::Round($file.Length/1MB, 2)) MB)"
+            }
+          }
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## 🎉 Release ${{ github.ref_name }}
+            
+            ### 📦 构建产物
+            
+            - **Windows 安装程序 (MSI)**: 适用于 Windows 系统的标准安装程序
+            - **Windows 安装程序 (NSIS)**: 另一种 Windows 安装程序格式
+            - **Windows 可执行文件 (EXE)**: 便携版，无需安装即可运行
+            
+            ### 📝 更新内容
+            
+            查看 [提交历史](https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.sha }}) 了解详细变更。
+            
+            ### 🚀 使用方法
+            
+            1. **安装版（推荐）**: 下载 `.msi` 或 NSIS `.exe` 文件，运行完成安装
+            2. **便携版**: 下载 `sniptnote.exe`，直接运行，无需安装
+            
+            ### ⚠️ Windows SmartScreen 警告处理
+            
+            由于应用未进行代码签名，Windows SmartScreen 可能会显示安全警告。这是正常现象：
+            
+            - **推荐使用安装包**：MSI 或 NSIS 安装包通常更容易被 Windows 信任
+            - **便携版处理**：如果使用便携版 `.exe` 遇到警告，请：
+              1. 右键点击文件 → 选择"属性"
+              2. 在属性窗口底部勾选"解除锁定"
+              3. 点击"确定"后即可正常运行
+            
+            ### 📋 系统要求
+            
+            - Windows 10 或更高版本
+            - 需要安装 [WebView2](https://developer.microsoft.com/microsoft-edge/webview2/)（Windows 11 已内置）
+          files: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/sniptnote.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
