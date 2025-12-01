@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import CommandList from '../components/CommandList.vue';
 import CommandForm from '../components/CommandForm.vue';
+import SyncSettings from '../components/SyncSettings.vue';
 import { Command } from '../types/command';
 import { useUiStore } from '../stores/uiStore';
 import { useCommandStore } from '../stores/commandStore';
+import { useSyncStore } from '../stores/syncStore';
 import { ElMessage } from 'element-plus';
 import { save, open } from '@tauri-apps/plugin-dialog';
 import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
@@ -19,6 +21,37 @@ const currentCommand = ref<Command | undefined>();
 // UI 与命令 store
 const ui = useUiStore();
 const commandStore = useCommandStore();
+const syncStore = useSyncStore();
+
+// 同步设置对话框
+const showSyncSettings = ref(false);
+
+// 同步状态图标 - 暂时使用固定图标，避免图标名称问题
+// const syncStatusIcon = computed(() => {
+//   switch (syncStore.syncStatus) {
+//     case 'syncing':
+//       return 'Loading';
+//     case 'success':
+//       return 'Check';
+//     case 'error':
+//       return 'Close';
+//     default:
+//       return 'Upload';
+//   }
+// });
+
+const syncStatusColor = computed(() => {
+  switch (syncStore.syncStatus) {
+    case 'syncing':
+      return 'primary';
+    case 'success':
+      return 'success';
+    case 'error':
+      return 'danger';
+    default:
+      return syncStore.enabled ? 'info' : '';
+  }
+});
 
 // 显示添加表单
 function showAddForm() {
@@ -198,6 +231,21 @@ function importCommands(ev: Event) {
         <el-button @click="exportCommands" class="action-btn" type="success">
           <el-icon><Download /></el-icon> 导出
         </el-button>
+        <el-tooltip 
+          :content="syncStore.enabled ? (syncStore.syncStatus === 'syncing' ? '同步中...' : syncStore.syncError || '已启用同步') : '未启用同步'"
+          placement="bottom"
+        >
+          <el-button 
+            circle 
+            :type="syncStatusColor" 
+            @click="showSyncSettings = true"
+            :class="{ 'sync-enabled': syncStore.enabled }"
+          >
+            <el-icon>
+              <Setting />
+            </el-icon>
+          </el-button>
+        </el-tooltip>
       </div>
     </header>
     
@@ -236,6 +284,9 @@ function importCommands(ev: Event) {
         <CommandList @edit-command="showEditForm" />
       </div>
     </main>
+
+    <!-- 同步设置对话框 -->
+    <SyncSettings v-model="showSyncSettings" />
   </div>
 </template>
 
@@ -268,6 +319,15 @@ function importCommands(ev: Event) {
 .form-container { border-radius: 12px; padding: 12px; background: var(--card); border: 1px solid var(--border); max-width: 800px; margin: 0 auto 16px; }
 .form-container h2 { margin-top: 0; margin-bottom: 8px; color: var(--text); text-align: center; }
 .list-container { margin-top: 8px; max-width: 800px; margin-left: auto; margin-right: auto; }
+
+.sync-enabled {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
 
 @media (max-width: 768px) {
   .home-container { padding: 10px; }

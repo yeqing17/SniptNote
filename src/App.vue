@@ -2,11 +2,16 @@
 import HomeView from './views/HomeView.vue';
 import { onMounted } from 'vue';
 import { useCommandStore } from './stores/commandStore';
+import { useSyncStore } from './stores/syncStore';
 
 const commandStore = useCommandStore();
+const syncStore = useSyncStore();
 
 onMounted(async () => {
+  // 加载命令数据
   await commandStore.loadData();
+  // 加载同步配置
+  await syncStore.loadConfig();
 });
 </script>
 
