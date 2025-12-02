@@ -1,7 +1,7 @@
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js/lib/core';
 import bash from 'highlight.js/lib/languages/bash';
-import 'highlight.js/styles/github.css';
+// 移除固定的 highlight.js 样式，改为在 App.vue 中根据主题动态设置
 
 // 注册语言
 hljs.registerLanguage('bash', bash);
