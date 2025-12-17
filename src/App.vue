@@ -299,8 +299,7 @@ body {
 .hljs {
   background: var(--code-bg) !important;
   color: var(--text-main) !important;
-  padding: 1em;
-  border-radius: 8px;
+  /* 移除 padding，由外层 pre 控制 */
 }
 
 /* Light 主题代码高亮 */
