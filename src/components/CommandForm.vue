@@ -31,8 +31,8 @@ const rules = {
     { required: true, message: "请输入标题", trigger: "blur" },
     {
       min: 2,
-      max: 50,
-      message: "标题长度应在2到50个字符之间",
+      max: 100,
+      message: "标题长度应在2到100个字符之间",
       trigger: "blur",
     },
   ],
@@ -138,7 +138,7 @@ function cancel() {
       <el-input
         v-model="formData.title"
         placeholder="输入命令标题"
-        maxlength="50"
+        maxlength="100"
         show-word-limit
       />
     </el-form-item>
@@ -159,7 +159,7 @@ function cancel() {
         v-model="formData.description"
         type="textarea"
         :rows="3"
-        maxlength="500"
+        maxlength="5000"
         show-word-limit
         placeholder="输入命令描述（可选）"
       />
